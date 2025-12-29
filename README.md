@@ -1,15 +1,14 @@
-# 🌌 Cosmic AI Chatbot - Advanced RAG-Based Conversational AI
+# 🌌 Cosmic HNSW RAG Chatbot
 
 <div align="center">
 
 ![Cosmic AI Chatbot](https://img.shields.io/badge/AI-Chatbot-blueviolet?style=for-the-badge&logo=openai)
+![FAISS HNSW](https://img.shields.io/badge/Vector_DB-FAISS_HNSW-orange?style=for-the-badge)
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Azure](https://img.shields.io/badge/Azure-0089D6?style=for-the-badge&logo=microsoft-azure&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 
-**A state-of-the-art Retrieval-Augmented Generation (RAG) chatbot powered by Azure OpenAI GPT-5, featuring advanced document processing, semantic search, and a stunning cosmic-themed UI.**
+**An advanced Retrieval-Augmented Generation (RAG) system featuring Recursive Character Chunking for precise context preservation and FAISS with HNSW indexing for millisecond-latency vector search. Powered by Azure OpenAI GPT-5.**
 
 [Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [Documentation](#-documentation) • [Screenshots](#-screenshots)
 
@@ -19,12 +18,17 @@
 
 ## ✨ Features
 
-### 🤖 Advanced AI Capabilities
-- **Azure OpenAI GPT-5 Integration** - Leverages the latest GPT-5 model for superior conversational AI
-- **Retrieval-Augmented Generation (RAG)** - Enhances responses with context from uploaded documents
-- **Streaming Responses** - Real-time token streaming for immediate feedback
-- **Multi-Format Document Support** - PDF, DOCX, TXT, and more
-- **Semantic Search** - FAISS-powered vector similarity search with HNSW indexing
+### 🧠 Advanced RAG Architecture
+- **Vector Database**: FAISS (Facebook AI Similarity Search)
+- **Index Type**: HNSW (Hierarchical Navigable Small World) for approximate nearest neighbor search
+- **Text Processing**: **Recursive Character Chunking** with intelligent overlap to maintain semantic context across boundaries
+- **Embeddings**: Azure OpenAI `text-embedding-ada-002` / `all-mpnet-base-v2` (768d)
+
+### 🤖 Core AI Capabilities
+- **Model**: Azure OpenAI GPT-5 Integration
+- **Streaming**: Real-time token streaming for immediate user feedback
+- **Semantic Search**: High-precision vector similarity retrieval (Top-K=5)
+
 
 ### 📚 Document Processing
 - **Intelligent Chunking** - Recursive text splitting for optimal context preservation

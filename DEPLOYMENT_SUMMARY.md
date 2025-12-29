@@ -42,38 +42,36 @@ Your **Cosmic AI Chatbot** project is now ready for GitHub! Here's what I've pre
 
 ### 🎯 Repository Name Suggestion
 
-**Primary**: `cosmic-ai-chatbot`
+**Primary**: `cosmic-hnsw-rag-chatbot`
 
-**Alternatives** (if taken):
-- `advanced-rag-chatbot`
-- `azure-openai-chatbot`
-- `gpt5-rag-chatbot`
-- `intelligent-document-chat`
+**Why this name?**
+- **Cosmic**: Maintains your unique styling/branding
+- **HNSW**: Highlights the advanced indexing algorithm
+- **RAG**: Defines the core architecture
+- **Chatbot**: Clearly states the application type
 
 ### 📝 Suggested Repository Description
 
+Copy and paste this exactly:
 ```
-🌌 Advanced RAG-Based Conversational AI Chatbot powered by Azure OpenAI GPT-5, featuring document processing, semantic search with FAISS, and a stunning cosmic-themed UI
+Advanced RAG Chatbot using Recursive Character Chunking and FAISS HNSW vector indexing for high-precision semantic search. Powered by Azure OpenAI GPT-5.
 ```
 
 ### 🏷️ Suggested Topics/Tags
 
 Add these topics to your GitHub repository for better discoverability:
-- `chatbot`
-- `rag`
-- `retrieval-augmented-generation`
-- `azure-openai`
-- `gpt5`
+- `hnsw`
 - `faiss`
+- `recursive-chunking`
+- `rag`
+- `azure-openai`
+- `chatbot`
 - `vector-search`
 - `fastapi`
 - `react`
 - `typescript`
-- `python`
 - `ai`
-- `machine-learning`
-- `natural-language-processing`
-- `semantic-search`
+
 
 ---
 
