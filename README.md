@@ -1,4 +1,4 @@
-# 🌌 Cosmic HNSW RAG Chatbot
+# 🌌 Advanced Modular RAG Chatbot
 
 <div align="center">
 
@@ -7,8 +7,10 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Azure](https://img.shields.io/badge/Azure-0089D6?style=for-the-badge&logo=microsoft-azure&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge&logo=python)
+![Agentic AI](https://img.shields.io/badge/Agentic-Chunking-success?style=for-the-badge)
 
-**An advanced Retrieval-Augmented Generation (RAG) system featuring Recursive Character Chunking for precise context preservation and FAISS with HNSW indexing for millisecond-latency vector search. Powered by Azure OpenAI GPT-5.**
+**An enterprise-grade Modular RAG system featuring dual chunking strategies (Recursive + Agentic), FAISS HNSW vector indexing for sub-millisecond search, and LLM-powered semantic segmentation. Built on Azure OpenAI GPT-5 with production-ready architecture.**
 
 [Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [Documentation](#-documentation) • [Screenshots](#-screenshots)
 
@@ -18,16 +20,53 @@
 
 ## ✨ Features
 
-### 🧠 Advanced RAG Architecture
-- **Vector Database**: FAISS (Facebook AI Similarity Search)
-- **Index Type**: HNSW (Hierarchical Navigable Small World) for approximate nearest neighbor search
-- **Text Processing**: **Recursive Character Chunking** with intelligent overlap to maintain semantic context across boundaries
-- **Embeddings**: Azure OpenAI `text-embedding-ada-002` / `all-mpnet-base-v2` (768d)
+### 🎯 Modular RAG Architecture
+- **Modular Design**: Pluggable components for easy customization and extension
+- **Service-Based Structure**: Clean separation between chunking, embeddings, vector storage, and chat services
+- **Strategy Pattern**: Switch between chunking strategies via configuration
+- **Scalable Infrastructure**: Production-ready async backend with FastAPI
+
+### 🧠 Advanced Text Chunking (Dual Strategy)
+
+#### 1️⃣ **Agentic Chunking** (LLM-Powered Semantic Segmentation)
+- **AI-Driven Topic Detection**: Uses Azure OpenAI to identify semantic boundaries
+- **TOON Format**: Custom Token-Oriented Object Notation for 30-60% token savings
+- **Sliding Window**: Processes text in configurable windows for optimal accuracy
+- **Context-Aware**: Maintains topical coherence across chunk boundaries
+- **Configurable**: `CHUNKING_STRATEGY=agentic` in `.env`
+
+#### 2️⃣ **Recursive Character Chunking** (Fast & Reliable)
+- **Hierarchical Splitting**: Respects document structure (paragraphs → sentences → words)
+- **Smart Overlap**: Configurable overlap to prevent context loss
+- **Separator Awareness**: Preserves formatting with intelligent separators
+- **Performance Optimized**: Faster processing for large documents
+- **Configurable**: `CHUNKING_STRATEGY=recursive` in `.env`
+
+### 📦 TOON Format Innovation
+- **Custom Data Format**: Token-Oriented Object Notation designed for LLM efficiency
+- **30-60% Token Savings**: Reduces API costs compared to JSON
+- **LLM-Readable**: Tabular structure that AI models understand naturally
+- **Production-Tested**: Used in agentic chunking and RAG context formatting
+- **See**: [TOON_FORMAT.md](TOON_FORMAT.md) for complete specification
+
+
+### 🗄️ Vector Database Excellence
+- **FAISS (Facebook AI Similarity Search)**: Industry-standard vector search
+- **HNSW Indexing**: Hierarchical Navigable Small World graphs for approximate nearest neighbor
+  - **M Parameter**: 32 (neighbors per node)
+  - **EF Construction**: 200 (build quality)
+  - **EF Search**: 100 (search quality)
+- **Sub-Millisecond Search**: Ultra-fast retrieval even with 100k+ vectors
+- **Persistent Storage**: Efficient disk-based storage with quick load times
+- **Embeddings**: Azure OpenAI `text-embedding-ada-002` (1536d) or local `all-mpnet-base-v2` (768d)
 
 ### 🤖 Core AI Capabilities
 - **Model**: Azure OpenAI GPT-5 Integration
 - **Streaming**: Real-time token streaming for immediate user feedback
 - **Semantic Search**: High-precision vector similarity retrieval (Top-K=5)
+- **Context Injection**: Intelligent RAG with relevant document chunks
+- **Professional Formatting**: Structured, markdown-formatted responses
+
 
 
 ### 📚 Document Processing
@@ -61,8 +100,8 @@
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/AryanKadar/cosmic-ai-chatbot.git
-cd cosmic-ai-chatbot
+git clone https://github.com/AryanKadar/advanced-modular-rag-chatbot.git
+cd advanced-modular-rag-chatbot
 ```
 
 ### 2. Backend Setup
@@ -471,8 +510,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📬 Contact & Support
 
-- **Issues**: [GitHub Issues](https://github.com/AryanKadar/cosmic-ai-chatbot/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/AryanKadar/cosmic-ai-chatbot/discussions)
+- **Issues**: [GitHub Issues](https://github.com/AryanKadar/advanced-modular-rag-chatbot/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/AryanKadar/advanced-modular-rag-chatbot/discussions)
 - **Email**: your.email@example.com
 
 ---
@@ -483,6 +522,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you found this project helpful, please consider giving it a ⭐!
 
-[![Star on GitHub](https://img.shields.io/github/stars/AryanKadar/cosmic-ai-chatbot?style=social)](https://github.com/AryanKadar/cosmic-ai-chatbot)
+[![Star on GitHub](https://img.shields.io/github/stars/AryanKadar/advanced-modular-rag-chatbot?style=social)](https://github.com/AryanKadar/advanced-modular-rag-chatbot)
 
 </div>

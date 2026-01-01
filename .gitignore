@@ -32,6 +32,7 @@ venv.bak/
 .env
 .env.local
 .env.*.local
+.env.backup
 
 # IDEs
 .vscode/
@@ -63,16 +64,33 @@ build/
 logs/
 *.log.*
 
+# Test Output Files (exclude these)
+test_output.txt
+test_results.txt
+test_results_utf8.txt
+test_logs.txt
+test_logs_clean.txt
+logs.txt
+
+# Exclude all .txt files except requirements.txt
+*.txt
+!requirements.txt
+!**/requirements.txt
+
 # FAISS Vector Store
 Backend/vector_store/
+Backend/vector_db/*.faiss
+Backend/vector_db/*.pkl
 
 # Uploaded Files
-Backend/uploads/
+Backend/uploads/*
+!Backend/uploads/.gitkeep
 
 # Temporary files
 *.tmp
 *.temp
 *.bak
+*.md~
 
 # OS
 Thumbs.db
@@ -83,3 +101,12 @@ Thumbs.db
 
 # VS Code
 .vscode/
+
+# User-uploaded images
+*.png
+*.jpg
+*.jpeg
+!docs/images/*.png
+!docs/images/*.jpg
+!docs/images/*.jpeg
+
