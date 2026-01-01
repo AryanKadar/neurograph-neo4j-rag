@@ -74,6 +74,10 @@ class Settings(BaseSettings):
     SIMILARITY_THRESHOLD: float = float(os.getenv("SIMILARITY_THRESHOLD", "0.7"))
     MAX_CONTEXT_CHUNKS: int = int(os.getenv("MAX_CONTEXT_CHUNKS", "8"))
     
+    # Chunking Strategy
+    CHUNKING_STRATEGY: str = os.getenv("CHUNKING_STRATEGY", "recursive").lower()
+    AGENTIC_WINDOW_SIZE: int = int(os.getenv("AGENTIC_WINDOW_SIZE", "20"))
+    
     # ─────────────────────────────────────────────────────────
     #  🔍 HNSW Configuration
     # ─────────────────────────────────────────────────────────
