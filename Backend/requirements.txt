@@ -9,11 +9,16 @@ python-multipart
 
 # Azure OpenAI
 openai
-sentence-transformers
+sentence-transformers>=2.2.2
 
 # Vector Database
 faiss-cpu
 numpy>=1.24.0
+
+# BM25 Search & Reranking
+rank-bm25==0.2.2
+# spacy>=3.8.0
+nltk>=3.8.1
 
 # Document Processing
 pypdf2
@@ -26,6 +31,7 @@ langchain-text-splitters
 python-dotenv
 pydantic
 pydantic-settings
+requests
 
 # Logging
 colorama

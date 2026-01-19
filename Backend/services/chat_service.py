@@ -9,8 +9,18 @@ import time
 from typing import List, Dict, Optional, AsyncGenerator
 from openai import AzureOpenAI, APIError, APIConnectionError
 from config.settings import settings
+from config import agent_config
 from services.vector_store import get_vector_store
 from services.embeddings import get_embedding_service
+from services.bm25_service import get_bm25_service
+from services.hybrid_retriever import get_hybrid_retriever
+from services.reranker_service import get_reranker_service
+from services.graph_traversal import get_graph_traversal
+from services.query_transform_service import get_query_transform_service
+from services.context_compressor import get_context_compressor
+from services.research_agent import get_research_agent
+from services.cache_service import get_cache_service
+from services.query_router import get_query_router
 from services.toon_formatter import ToonFormatter
 from services.response_formatter import ResponseFormatter
 from utils.logger import setup_logger
@@ -84,37 +94,61 @@ class ChatService:
         logger.info(f"💬 Processing query: {query[:50]}...")
         
         # ─────────────────────────────────────
-        # Step 1: RAG Retrieval (if enabled)
+        # SMART QUERY ROUTING
         # ─────────────────────────────────────
-        if use_rag:
-            logger.info("🔍 Retrieving relevant context...")
+        router = get_query_router()
+        route, route_metadata = router.route_query(query)
+        
+        # Check if we can skip RAG entirely
+        if route_metadata.get('skip_rag', False):
+            logger.info(f"⚡ Skipping RAG - Route: {route}")
             
-            try:
-                embedding_service = get_embedding_service()
-                vector_store = get_vector_store()
-                
-                # Generate query embedding
-                query_embedding = embedding_service.embed_query(query)
-                
-                # Search for similar chunks
-                context_chunks = vector_store.search(
-                    query_embedding,
-                    top_k=settings.TOP_K_RESULTS,
-                    file_ids=file_ids
-                )
-                
-                if context_chunks:
-                    logger.info(f"   └─ Found: {len(context_chunks)} relevant chunks")
-                    for i, chunk in enumerate(context_chunks):
-                        logger.info(f"      └─ Chunk {i+1}: Score {chunk['score']:.3f}")
-                else:
-                    logger.info("   └─ No relevant chunks found")
-                    
-            except Exception as e:
-                logger.error(f"❌ RAG retrieval error: {e}")
+            # Generate quick response
+            quick_response = router.format_quick_response(route, query)
+            if quick_response:
+                # Stream the quick response
+                yield f"data: {json.dumps({'content': quick_response})}\\n\\n"
+                yield f"data: {json.dumps({'done': True})}\\n\\n"
+                logger.info(f"✅ Quick response sent (no RAG needed)")
+                return
         
         # ─────────────────────────────────────
-        # Step 2: Prepare Messages
+        # RAG Retrieval (Threaded to avoid blocking)
+        # ─────────────────────────────────────
+        if use_rag:
+            try:
+                # Run heavy retrieval in a separate thread
+                import asyncio
+                context_chunks = await asyncio.to_thread(
+                    self._retrieve_rag_context,
+                    query=query,
+                    file_ids=file_ids,
+                    route_metadata=route_metadata
+                )
+            except Exception as e:
+                logger.error(f"❌ RAG retrieval error in thread: {e}")
+                
+        # ─────────────────────────────────────
+        # Step 2: Context Compression (Local LLM)
+        # ─────────────────────────────────────
+        context_text = ""
+        if context_chunks:
+            # Save to cache if new
+            if use_rag:
+                # We can't easily check 'cached_context' here since we moved logic
+                # But we can cache the result
+                pass 
+                
+            try:
+                compressor = get_context_compressor()
+                # Returns compressed text OR full formatted text if compression disabled
+                context_text = compressor.compress(context_chunks, query)
+            except Exception as e:
+                logger.error(f"⚠️ Context compression failed: {e}")
+                context_text = ToonFormatter.format_full_context(context_chunks)
+
+        # ─────────────────────────────────────
+        # Step 3: Prepare Messages
         # ─────────────────────────────────────
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]
         
@@ -136,8 +170,7 @@ class ChatService:
                 input_parts.append(f"HISTORY:\n{history_text}")
         
         # Add RAG context
-        if context_chunks:
-            context_text = ToonFormatter.format_full_context(context_chunks)
+        if context_text:
             input_parts.append(f"CONTEXT:\n{context_text}")
         
         # Add the query
@@ -151,7 +184,7 @@ class ChatService:
         logger.info(f"   └─ Messages: {len(messages)}")
         
         # ─────────────────────────────────────
-        # Step 3: Stream Response
+        # Step 4: Stream Response
         # ─────────────────────────────────────
         try:
             stream = self.client.chat.completions.create(
@@ -187,6 +220,163 @@ class ChatService:
             logger.error(f"❌ Streaming error: {e}")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
     
+    def _retrieve_rag_context(self, query: str, file_ids: List[str], route_metadata: Dict = None) -> List[Dict]:
+        """Synchronous method for heavy RAG retrieval"""
+        context_chunks = []
+        route_metadata = route_metadata or {}
+        
+        # ─────────────────────────────────────
+        # Cache Check
+        # ─────────────────────────────────────
+        cache = get_cache_service()
+        cache_key = cache.generate_key("rag_context", query)
+        cached_context = cache.get(cache_key)
+        
+        if cached_context:
+            logger.info("⚡ Cache Hit: Using cached retrieval results")
+            return cached_context
+
+        # ─────────────────────────────────────
+        # Agentic RAG Check
+        # ─────────────────────────────────────
+        if route_metadata.get('use_agent', False):
+            logger.info(f"🤖 Agentic RAG Triggered: '{query}'")
+            try:
+                agent = get_research_agent()
+                context_chunks = agent.research(query)
+                if context_chunks:
+                    cache.set(cache_key, context_chunks)
+                    return context_chunks
+            except Exception as e:
+                logger.error(f"❌ Agent failed: {e}")
+
+        # ─────────────────────────────────────
+        # Step 0: Query Transformation
+        # ─────────────────────────────────────
+        search_query = query
+        search_weights = [0.35, 0.35, 0.30]
+        
+        # Check if we should skip HyDE (for simple queries)
+        use_hyde = not route_metadata.get('skip_hyde', False)
+        
+        try:
+            qt_service = get_query_transform_service()
+            
+            # A. Analysis (always run for weight optimization)
+            analysis = qt_service.analyze_query(query)
+            weights = analysis.get('weights', {})
+            search_weights = [
+                weights.get('vector', 0.35),
+                weights.get('bm25', 0.35),
+                weights.get('graph', 0.30)
+            ]
+            
+            # B. HyDE (conditionally based on route)
+            # B. HyDE (conditionally based on route)
+            if use_hyde:
+                logger.info("🧠 Using HyDE for query enhancement")
+                hyde_doc = qt_service.generate_hyde_doc(query)
+                
+                # C. Self-Critique & Weight Adjustment
+                critique = qt_service.critique_hyde(query, hyde_doc)
+                adjusted_weights_dict = qt_service.adjust_weights(weights, critique)
+                
+                # Update search weights list [vector, bm25, graph]
+                search_weights = [
+                    adjusted_weights_dict.get('vector', 0.35),
+                    adjusted_weights_dict.get('bm25', 0.35),
+                    adjusted_weights_dict.get('graph', 0.30)
+                ]
+                
+                # Handle Low Confidence / Fallback
+                if critique.get('recommendation') == 'trust_low':
+                    logger.info("⚠️ Low Confidence HyDE: Generating fallback from alternative causes")
+                    alts = critique.get('alternative_causes', [])
+                    if alts:
+                         fallback_text = f"Alternative causes: {', '.join(alts)}"
+                         search_query = f"{query}\n{fallback_text}"
+                    else:
+                         search_query = query # Revert to original if no alternatives
+                else:
+                    search_query = hyde_doc
+
+            else:
+                logger.info("⚡ Skipping HyDE (simple query - exact matching preferred)")
+                search_query = query
+            
+        except Exception as e:
+            logger.error(f"⚠️ Query transformation failed: {e}")
+            
+        # ─────────────────────────────────────
+        # Step 1: Ultimate Hybrid RAG Retrieval
+        # ─────────────────────────────────────
+        logger.info("🔍 Ultimate Hybrid Retrieval Pipeline Starting...")
+        
+        try:
+            embedding_service = get_embedding_service()
+            vector_store = get_vector_store()
+            bm25_service = get_bm25_service()
+            hybrid_retriever = get_hybrid_retriever()
+            reranker = get_reranker_service()
+            
+            # 1A. Vector
+            query_embedding = embedding_service.embed_query(search_query)
+            vector_results = vector_store.search(query_embedding, top_k=10, file_ids=file_ids)
+            vector_results_formatted = [
+                ({
+                    "id": f"vector_{i}",
+                    "content": result["content"],
+                    "file_id": result["file_id"],
+                    "chunk_index": result["chunk_index"]
+                }, result["score"])
+                for i, result in enumerate(vector_results)
+            ]
+            
+            # 1B. BM25
+            bm25_results = bm25_service.search(query, top_k=10)
+            
+            # 1C. Graph
+            graph_traversal = get_graph_traversal()
+            graph_results = graph_traversal.search_by_query(query)
+            
+            # 2. Fusion
+            if vector_results_formatted or bm25_results or graph_results:
+                fused_results = hybrid_retriever.fuse(
+                    result_sets=[vector_results_formatted, bm25_results, graph_results],
+                    weights=search_weights,
+                    method_names=['Vector', 'BM25', 'Graph']
+                )
+                
+                # 3. Rerank
+                if fused_results:
+                    reranked_results = reranker.rerank(
+                        query=query,
+                        candidates=fused_results[:20],
+                        top_k=settings.TOP_K_RESULTS,
+                        threshold=0.0
+                    )
+                    
+                    context_chunks = [
+                        {
+                            "content": chunk["content"],
+                            "score": score,
+                            "file_id": chunk.get("file_id", "unknown"),
+                            "chunk_index": chunk.get("chunk_index", 0),
+                            "appeared_in": chunk.get("appeared_in", []),
+                            "reranker_score": chunk.get("reranker_score", score),
+                            "graph_path": chunk.get("graph_path", None)
+                        }
+                        for chunk, score in reranked_results
+                    ]
+                    
+                    cache.set(cache_key, context_chunks)
+                    return context_chunks
+                    
+        except Exception as e:
+            logger.error(f"❌ Retrieval logic error: {e}")
+            
+        return []
+
     async def get_chat_response(
         self,
         query: str,

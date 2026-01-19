@@ -11,6 +11,9 @@ from services.document_parser import DocumentParser
 from services.chunking import get_text_chunker
 from services.embeddings import get_embedding_service
 from services.vector_store import get_vector_store
+from services.bm25_service import get_bm25_service
+from services.entity_extractor import get_entity_extractor
+from services.graph_service import get_graph_service
 from utils.logger import setup_logger
 
 logger = setup_logger()
@@ -109,13 +112,84 @@ async def process_document(file_path: str, file_id: str):
         )
         
         # ─────────────────────────────────────
+        # Step 5: Build BM25 Index
+        # ─────────────────────────────────────
+        logger.info("\n🔨 STEP 5: Building BM25 Keyword Index")
+        logger.info("─" * 40)
+        
+        bm25_service = get_bm25_service()
+        
+        # Prepare chunks for BM25 (need id and content)
+        bm25_chunks = [
+            {
+                "id": f"{file_id}_chunk_{i}",
+                "content": chunk,
+                "file_id": file_id,
+                "chunk_index": i
+            }
+            for i, chunk in enumerate(chunks)
+        ]
+        
+        bm25_service.build_index(bm25_chunks)
+        
+        # ─────────────────────────────────────
+        # Step 6: Extract Knowledge Graph
+        # ─────────────────────────────────────
+        logger.info("\n🕸️  STEP 6: Extracting Knowledge Graph")
+        logger.info("─" * 40)
+        
+        entity_extractor = get_entity_extractor()
+        graph_service = get_graph_service()
+        
+        # Process larger parent chunks for graph extraction
+        # (better context for entity relationships)
+        parent_chunk_size = 1500
+        parent_chunks = []
+        
+        # Create parent chunks by combining consecutive chunks
+        for i in range(0, len(chunks), 3):
+            parent_text = ' '.join(chunks[i:i+3])
+            if len(parent_text) > 100:  # Skip tiny chunks
+                parent_chunks.append({
+                    'id': f"{file_id}_parent_{i}",
+                    'text': parent_text
+                })
+        
+        logger.info(f"   └─ Processing {len(parent_chunks)} parent chunks for extraction...")
+        
+        total_entities = 0
+        total_relationships = 0
+        
+        for parent_chunk in parent_chunks:
+            # Extract entities and relationships
+            extraction_result = entity_extractor.extract(
+                text=parent_chunk['text'],
+                chunk_id=parent_chunk['id']
+            )
+            
+            # Add to graph
+            graph_service.add_extraction_result(extraction_result, file_id)
+            
+            total_entities += len(extraction_result.get('entities', []))
+            total_relationships += len(extraction_result.get('relationships', []))
+        
+        logger.info(f"   └─ Extracted: {total_entities} entities, {total_relationships} relationships")
+        
+        # Get graph stats
+        graph_stats = graph_service.get_stats()
+        logger.info(f"   └─ Graph now contains: {graph_stats['total_nodes']} nodes, {graph_stats['total_edges']} edges")
+        
+        # ─────────────────────────────────────
         # Complete!
         # ─────────────────────────────────────
         logger.info("\n" + "═" * 60)
         logger.info(f"🎉 DOCUMENT PROCESSED SUCCESSFULLY!")
         logger.info(f"   └─ File ID: {file_id}")
         logger.info(f"   └─ Chunks: {len(chunks)}")
-        logger.info(f"   └─ Ready for RAG queries")
+        logger.info(f"   └─ Vector Index: ✅")
+        logger.info(f"   └─ BM25 Index: ✅")
+        logger.info(f"   └─ Knowledge Graph: ✅ (+{total_entities} entities, +{total_relationships} rels)")
+        logger.info(f"   └─ Ready for Ultimate Hybrid RAG queries")
         logger.info("═" * 60 + "\n")
         
     except Exception as e:

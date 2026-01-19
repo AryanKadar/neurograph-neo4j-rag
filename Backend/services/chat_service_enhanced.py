@@ -86,32 +86,98 @@ class ChatService:
         # ─────────────────────────────────────
         # Step 1: RAG Retrieval (if enabled)
         # ─────────────────────────────────────
+        # ─────────────────────────────────────
+        # Step 1: Smart Routing & Query Analysis
+        # ─────────────────────────────────────
+        from services.query_router import get_query_router
+        from services.query_transform_service import get_query_transform_service
+        from services.hybrid_retriever import get_hybrid_retriever
+        from services.bm25_service import get_bm25_service
+        from services.graph_traversal import get_graph_traversal
+        
+        router = get_query_router()
+        transform_service = get_query_transform_service()
+        hybrid_retriever = get_hybrid_retriever()
+        
+        # 1. Route the query
+        route_type, route_metadata = router.route_query(query)
+        logger.info(f"🧭 Route classified as: {route_type.upper()}")
+        
+        # Handle non-RAG routes immediately
+        if not router.should_use_rag(route_type):
+            quick_response = router.format_quick_response(route_type, query)
+            yield f"data: {json.dumps({'content': quick_response})}\\n\\n"
+            yield f"data: {json.dumps({'done': True, 'response_time_ms': 0, 'chunks_used': 0})}\\n\\n"
+            return
+
+        # 2. Analyze Intent & Get Initial Weights
+        analysis_result = transform_service.analyze_query(query)
+        search_weights = analysis_result['weights']
+        
+        # 3. HyDE Generation & Self-Critique (if needed)
+        hyde_doc = None
+        if router.should_use_hyde(route_type):
+            hyde_doc = transform_service.generate_hyde_doc(query)
+            if hyde_doc and hyde_doc != query:
+                # Critique the HyDE document
+                critique = transform_service.critique_hyde(query, hyde_doc)
+                # Adjust weights based on confidence
+                search_weights = transform_service.adjust_weights(search_weights, critique)
+
+        # ─────────────────────────────────────
+        # Step 2: Parallel Search & Fusion
+        # ─────────────────────────────────────
         if use_rag:
-            logger.info("🔍 Retrieving relevant context...")
+            logger.info("🔍 executing parallel hybrid search strategies...")
             
             try:
+                # A. Vector Search
                 embedding_service = get_embedding_service()
                 vector_store = get_vector_store()
                 
-                # Generate query embedding
-                query_embedding = embedding_service.embed_query(query)
+                # Use HyDE doc for vector search if available, else original query
+                search_text = hyde_doc if hyde_doc else query
+                query_embedding = embedding_service.embed_query(search_text)
                 
-                # Search for similar chunks
-                context_chunks = vector_store.search(
+                vector_results = vector_store.search(
                     query_embedding,
-                    top_k=settings.TOP_K_RESULTS,
+                    top_k=settings.TOP_K_RESULTS * 2, # Fetch more for fusion
                     file_ids=file_ids
                 )
                 
+                # B. BM25 Search
+                bm25_service = get_bm25_service()
+                bm25_results = bm25_service.search(query, top_k=settings.TOP_K_RESULTS * 2)
+                
+                # C. Graph Search
+                graph_traversal = get_graph_traversal()
+                graph_results = graph_traversal.search_by_query(query)
+                
+                # D. RRF Fusion
+                logger.info(f"⚖️  Fusing results with weights: {search_weights}")
+                fused_results = hybrid_retriever.fuse(
+                    result_sets=[vector_results, bm25_results, graph_results],
+                    weights=[search_weights['vector'], search_weights['bm25'], search_weights['graph']],
+                    method_names=['Vector', 'BM25', 'Graph']
+                )
+                
+                # Take top K from fused list
+                context_chunks = [item[0] for item in fused_results[:settings.MAX_CONTEXT_CHUNKS]]
+                
                 if context_chunks:
-                    logger.info(f"   └─ Found: {len(context_chunks)} relevant chunks")
-                    for i, chunk in enumerate(context_chunks):
-                        logger.info(f"      └─ Chunk {i+1}: Score {chunk['score']:.3f}")
+                    logger.info(f"   └─ Selected {len(context_chunks)} optimal chunks after fusion")
                 else:
-                    logger.info("   └─ No relevant chunks found")
+                    logger.info("   └─ No relevant chunks found after fusion")
                     
             except Exception as e:
-                logger.error(f"❌ RAG retrieval error: {e}")
+                logger.error(f"❌ Hybrid RAG retrieval error: {e}")
+                # Fallback to simple vector search
+                try:
+                    logger.warning("⚠️ Falling back to simple vector search...")
+                    query_embedding = embedding_service.embed_query(query)
+                    context_chunks = vector_store.search(query_embedding, top_k=settings.TOP_K_RESULTS)
+                except Exception as ve:
+                     logger.error(f"❌ Fallback failed: {ve}")
         
         # ─────────────────────────────────────
         # Step 2: Prepare Messages
@@ -247,25 +313,78 @@ class ChatService:
         history = history or []
         context_chunks = []
         
-        # RAG Retrieval
+        # 1. Routing
+        from services.query_router import get_query_router
+        router = get_query_router()
+        route_type, _ = router.route_query(query)
+        
+        # Handle quick responses
+        if not router.should_use_rag(route_type):
+            return {
+                "response": router.format_quick_response(route_type, query),
+                "retrieved_chunks": [],
+                "model": "rule-based"
+            }
+
+        # 2. RAG Retrieval (Hybrid)
         if use_rag:
             try:
-                embedding_service = get_embedding_service()
-                vector_store = get_vector_store()
+                # Import services
+                from services.query_transform_service import get_query_transform_service
+                from services.hybrid_retriever import get_hybrid_retriever
+                from services.bm25_service import get_bm25_service
+                from services.graph_traversal import get_graph_traversal
+                from services.vector_store import get_vector_store
+                from services.embeddings import get_embedding_service
                 
-                query_embedding = embedding_service.embed_query(query)
-                context_chunks = vector_store.search(
-                    query_embedding,
-                    top_k=settings.TOP_K_RESULTS,
-                    file_ids=file_ids
+                # Setup
+                transform_service = get_query_transform_service()
+                hybrid_retriever = get_hybrid_retriever()
+                
+                # Analysis & HyDE
+                weights = transform_service.analyze_query(query)['weights']
+                hyde_doc = None
+                if router.should_use_hyde(route_type):
+                    hyde_doc = transform_service.generate_hyde_doc(query)
+                    if hyde_doc:
+                        critique = transform_service.critique_hyde(query, hyde_doc)
+                        weights = transform_service.adjust_weights(weights, critique)
+                
+                # Parallel Search
+                # A. Vector
+                search_text = hyde_doc if hyde_doc else query
+                emb_service = get_embedding_service()
+                q_emb = emb_service.embed_query(search_text)
+                vec_results = get_vector_store().search(q_emb, top_k=settings.TOP_K_RESULTS*2, file_ids=file_ids)
+                
+                # B. BM25
+                bm25_results = get_bm25_service().search(query, top_k=settings.TOP_K_RESULTS*2)
+                
+                # C. Graph
+                graph_results = get_graph_traversal().search_by_query(query)
+                
+                # Fusion
+                fused = hybrid_retriever.fuse(
+                    [vec_results, bm25_results, graph_results],
+                    weights=[weights['vector'], weights['bm25'], weights['graph']]
                 )
+                
+                # Top K
+                context_chunks = [x[0] for x in fused[:settings.MAX_CONTEXT_CHUNKS]]
+                
             except Exception as e:
-                logger.error(f"❌ RAG retrieval error: {e}")
+                logger.error(f"❌ Hybrid RAG error: {e}")
+                # Fallback
+                try: 
+                    emb = get_embedding_service().embed_query(query)
+                    context_chunks = get_vector_store().search(emb, top_k=5)
+                except:
+                    context_chunks = []
         
         # Prepare messages
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]
         
-        # Add context
+        # Add context (Formatted)
         input_parts = []
         
         if history:

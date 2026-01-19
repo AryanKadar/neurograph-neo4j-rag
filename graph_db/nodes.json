@@ -1,0 +1,22 @@
+{
+  "test_entity_1": {
+    "id": "test_entity_1",
+    "type": "SYSTEM",
+    "name": "TestSystem",
+    "description": "A test system",
+    "source_chunks": [
+      "test_chunk_1"
+    ],
+    "file_id": "test_file_1"
+  },
+  "test_entity_2": {
+    "id": "test_entity_2",
+    "type": "PERSON",
+    "name": "TestPerson",
+    "description": "A test person",
+    "source_chunks": [
+      "test_chunk_1"
+    ],
+    "file_id": "test_file_1"
+  }
+}

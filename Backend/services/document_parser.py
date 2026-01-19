@@ -6,6 +6,8 @@
 
 import os
 from typing import Optional
+from config.settings import settings
+import io
 from utils.logger import setup_logger
 
 logger = setup_logger()
@@ -75,6 +77,45 @@ class DocumentParser:
                 if text and text.strip():
                     text_parts.append(text)
                     logger.info(f"      └─ Page {page_num + 1}: {len(text)} chars")
+                
+                # 🖼️ MULTIMODAL EXTRACTION
+                if settings.ENABLE_MULTIMODAL:
+                    try:
+                        # Try to import dependencies locally to avoid crash if missing
+                        import ollama
+                        from PIL import Image
+                        
+                        if hasattr(page, 'images') and page.images:
+                            logger.info(f"      └─ Found {len(page.images)} images on page {page_num + 1}")
+                            
+                            for img_obj in page.images:
+                                try:
+                                    # Convert bytes to PIL Image (validation)
+                                    image_bytes = img_obj.data
+                                    
+                                    # Call Ollama Vision (Llama 3.2 Vision)
+                                    # Note: This adds latency but enriches content significantly
+                                    response = ollama.chat(
+                                        model=settings.OLLAMA_VISION_MODEL,
+                                        messages=[{
+                                            'role': 'user',
+                                            'content': 'Describe this image in detail. If it is a chart or graph, summarize the data points and trends. If it is a diagram, explain the flow.',
+                                            'images': [image_bytes]
+                                        }]
+                                    )
+                                    
+                                    description = response['message']['content']
+                                    desc_marker = f"\n\n[IMAGE DESCRIPTION: {description}]\n\n"
+                                    text_parts.append(desc_marker)
+                                    logger.info(f"         └─ Generated description: {description[:50]}...")
+                                    
+                                except Exception as img_err:
+                                    logger.warning(f"         ⚠️ Failed to process image: {img_err}")
+                                    
+                    except ImportError:
+                        logger.warning("      ⚠️ Multimodal dependencies (ollama, pillow) missing. Skipping images.")
+                    except Exception as mm_err:
+                        logger.warning(f"      ⚠️ Multimodal processing error: {mm_err}")
             
             full_text = "\n\n".join(text_parts)
             logger.info(f"   └─ Total extracted: {len(full_text)} characters")

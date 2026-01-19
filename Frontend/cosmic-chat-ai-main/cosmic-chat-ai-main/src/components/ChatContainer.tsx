@@ -16,6 +16,7 @@ interface UploadedFile {
   id: string;
   name: string;
   status: 'uploading' | 'processing' | 'completed' | 'error';
+  statusMessage?: string;
   error?: string;
 }
 
@@ -111,9 +112,10 @@ const DocumentUpload = ({
       pollStatus(data.file_id, tempId);
 
     } catch (error) {
+      console.error('Upload error:', error);
       setFiles(prev => prev.map(f =>
         f.id === tempId
-          ? { ...f, status: 'error', error: 'Upload failed' }
+          ? { ...f, status: 'error', error: 'Upload failed - check server connection' }
           : f
       ));
     }
@@ -121,34 +123,72 @@ const DocumentUpload = ({
 
   const pollStatus = async (fileId: string, tempId: string) => {
     let attempts = 0;
-    const maxAttempts = 60; // 60 seconds timeout
+    const maxAttempts = 300; // Increased to 5 minutes for deep graph analysis
 
     const checkStatus = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/api/analyze/status/${fileId}`);
-        const data = await response.json();
 
-        if (data.status === 'completed') {
-          setFiles(prev => prev.map(f =>
-            f.id === fileId || f.id === tempId
-              ? { ...f, id: fileId, status: 'completed' }
-              : f
-          ));
+        if (!response.ok) {
+          // If backend error, keep polling a few times, then fail?
+          // For now, assume temporary glitch and retry
+        } else {
+          const data = await response.json();
 
-          // Notify parent
-          const file = files.find(f => f.id === tempId || f.id === fileId);
-          if (file) {
-            onFileUploaded(fileId, file.name);
+          if (data.status === 'completed') {
+            setFiles(prev => prev.map(f =>
+              f.id === fileId || f.id === tempId
+                ? { ...f, id: fileId, status: 'completed', statusMessage: 'Ready' }
+                : f
+            ));
+
+            // Notify parent
+            const file = files.find(f => f.id === tempId || f.id === fileId);
+            if (file) {
+              onFileUploaded(fileId, file.name);
+            }
+            return;
+          } else if (data.status === 'failed') {
+            setFiles(prev => prev.map(f =>
+              f.id === fileId || f.id === tempId
+                ? { ...f, id: fileId, status: 'error', error: data.error || 'Processing failed' }
+                : f
+            ));
+            return;
           }
-          return;
         }
 
         attempts++;
         if (attempts < maxAttempts) {
+          // Update status message for long waits
+          if (attempts > 10 && attempts % 5 === 0) {
+            setFiles(prev => prev.map(f =>
+              f.id === fileId || f.id === tempId
+                ? { ...f, statusMessage: 'Extracting knowledge graph... this can take a minute' }
+                : f
+            ));
+          }
+          if (attempts > 30 && attempts % 10 === 0) {
+            setFiles(prev => prev.map(f =>
+              f.id === fileId || f.id === tempId
+                ? { ...f, statusMessage: 'Still analyzing deep connections...' }
+                : f
+            ));
+          }
+
           setTimeout(checkStatus, 1000);
+        } else {
+          setFiles(prev => prev.map(f =>
+            f.id === fileId || f.id === tempId
+              ? { ...f, status: 'error', error: 'Processing timed out' }
+              : f
+          ));
         }
       } catch (error) {
         console.error('Status check failed:', error);
+        // Retry even on network error
+        attempts++;
+        if (attempts < maxAttempts) setTimeout(checkStatus, 2000);
       }
     };
 
@@ -219,7 +259,9 @@ const DocumentUpload = ({
                 <FileText className="w-5 h-5 text-cosmic-cyan" />
                 <div>
                   <p className="text-sm font-medium">{file.name}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{file.status}</p>
+                  <p className="text-xs text-muted-foreground capitalize">
+                    {file.status === 'error' ? file.error : (file.statusMessage || file.status)}
+                  </p>
                 </div>
               </div>
 

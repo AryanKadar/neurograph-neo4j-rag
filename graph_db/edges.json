@@ -1,0 +1,11 @@
+[
+  {
+    "from_id": "test_entity_1",
+    "to_id": "test_entity_2",
+    "type": "CREATED_BY",
+    "confidence": 0.95,
+    "description": "TestSystem was created by TestPerson",
+    "file_id": "test_file_1",
+    "chunk_id": "test_chunk_1"
+  }
+]

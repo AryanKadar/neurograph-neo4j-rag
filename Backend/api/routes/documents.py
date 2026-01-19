@@ -124,3 +124,48 @@ async def get_document_text(file_id: str):
         "content": "\n\n".join(chunks),
         "chunks_count": len(chunks)
     }
+
+
+@router.post("/clear-all")
+async def clear_all_data():
+    """
+    ┌─────────────────────────────────────────────┐
+    │  🗑️ CLEAR ALL DATA - Fresh Start             │
+    └─────────────────────────────────────────────┘
+    
+    Clears all databases and uploaded files.
+    Use this when starting a new session or project.
+    """
+    
+    logger.info("═" * 60)
+    logger.info("🗑️ CLEAR ALL DATA REQUEST")
+    logger.info("═" * 60)
+    
+    try:
+        # Clear Vector Store (includes FAISS index, chunks, uploaded files, BM25)
+        vector_store = get_vector_store()
+        vector_store.clear_all()
+        
+        # Clear Graph Database
+        from services.graph_service import get_graph_service
+        graph_service = get_graph_service()
+        graph_service.clear_all()
+        
+        logger.info("✅ All data cleared successfully!")
+        logger.info("═" * 60)
+        
+        return {
+            "status": "success",
+            "message": "✅ All data cleared! Ready for fresh start.",
+            "details": {
+                "vector_store": "cleared",
+                "graph_database": "cleared",
+                "bm25_index": "cleared",
+                "uploaded_files": "cleared"
+            }
+        }
+    
+    except Exception as e:
+        logger.error(f"❌ Error clearing data: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to clear data: {str(e)}")
+

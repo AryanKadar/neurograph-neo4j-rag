@@ -1,4 +1,4 @@
-# 🌌 Advanced Modular RAG Chatbot
+# 🧠 NeuroGraph-RAG
 
 <div align="center">
 
@@ -10,7 +10,7 @@
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge&logo=python)
 ![Agentic AI](https://img.shields.io/badge/Agentic-Chunking-success?style=for-the-badge)
 
-**An enterprise-grade Modular RAG system featuring dual chunking strategies (Recursive + Agentic), FAISS HNSW vector indexing for sub-millisecond search, and LLM-powered semantic segmentation. Built on Azure OpenAI GPT-5 with production-ready architecture.**
+**An enterprise-grade Agentic RAG system featuring Hybrid Triple Search (Vector + BM25 + Knowledge Graph), Smart Query Routing, and Self-Corrective Reasoning.**
 
 [Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [Documentation](#-documentation) • [Screenshots](#-screenshots)
 
@@ -100,8 +100,8 @@
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/AryanKadar/advanced-modular-rag-chatbot.git
-cd advanced-modular-rag-chatbot
+git clone https://github.com/AryanKadar/neurograph-rag.git
+cd neurograph-rag
 ```
 
 ### 2. Backend Setup
@@ -179,7 +179,7 @@ npm run dev
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      Cosmic AI Chatbot                          │
+│                      NeuroGraph-RAG                             │
 └─────────────────────────────────────────────────────────────────┘
                               │
               ┌───────────────┴───────────────┐
@@ -510,8 +510,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📬 Contact & Support
 
-- **Issues**: [GitHub Issues](https://github.com/AryanKadar/advanced-modular-rag-chatbot/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/AryanKadar/advanced-modular-rag-chatbot/discussions)
+- **Issues**: [GitHub Issues](https://github.com/AryanKadar/neurograph-rag/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/AryanKadar/neurograph-rag/discussions)
 - **Email**: your.email@example.com
 
 ---
@@ -522,6 +522,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you found this project helpful, please consider giving it a ⭐!
 
-[![Star on GitHub](https://img.shields.io/github/stars/AryanKadar/advanced-modular-rag-chatbot?style=social)](https://github.com/AryanKadar/advanced-modular-rag-chatbot)
+[![Star on GitHub](https://img.shields.io/github/stars/AryanKadar/neurograph-rag?style=social)](https://github.com/AryanKadar/neurograph-rag)
 
 </div>

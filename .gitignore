@@ -110,3 +110,9 @@ Thumbs.db
 !docs/images/*.jpg
 !docs/images/*.jpeg
 
+
+# AI Model Weights
+*.safetensors
+*.bin
+*.pt
+*.pth

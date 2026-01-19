@@ -232,6 +232,67 @@ class VectorStore:
         """Get all chunk contents for a specific file"""
         return [c["content"] for c in self.chunks if c["file_id"] == file_id]
     
+    def clear_all(self):
+        """
+        ┌─────────────────────────────────────────────┐
+        │  🗑️ CLEAR ALL DATA - Reset Database         │
+        └─────────────────────────────────────────────┘
+        
+        Removes all vectors, chunks, metadata, and files.
+        Use this for starting fresh or clearing old data.
+        """
+        logger.info("═" * 60)
+        logger.info("🗑️ CLEARING ALL VECTOR STORE DATA")
+        logger.info("═" * 60)
+        
+        # Reset in-memory structures
+        self.chunks = []
+        self.metadata = {"documents": {}}
+        self.processing_files = set()
+        self.failed_files = {}
+        
+        # Recreate FAISS index
+        logger.info("🔄 Recreating FAISS index...")
+        self.index = faiss.IndexHNSWFlat(
+            self.dimension,
+            settings.HNSW_M
+        )
+        self.index.hnsw.efConstruction = settings.HNSW_EF_CONSTRUCTION
+        
+        # Delete persisted files
+        import shutil
+        if os.path.exists(self.index_path):
+            os.remove(self.index_path)
+            logger.info("   └─ Deleted: index.faiss")
+        
+        if os.path.exists(self.chunks_path):
+            os.remove(self.chunks_path)
+            logger.info("   └─ Deleted: chunks.json")
+        
+        if os.path.exists(self.metadata_path):
+            os.remove(self.metadata_path)
+            logger.info("   └─ Deleted: metadata.json")
+        
+        # Clear uploaded files
+        if os.path.exists(settings.UPLOAD_DIR):
+            for filename in os.listdir(settings.UPLOAD_DIR):
+                file_path = os.path.join(settings.UPLOAD_DIR, filename)
+                try:
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                except Exception as e:
+                    logger.warning(f"   ⚠️ Could not delete {filename}: {e}")
+            logger.info("   └─ Cleared: uploads directory")
+        
+        # Clear BM25 index
+        bm25_path = os.path.join(settings.VECTOR_DB_PATH, "bm25_index.pkl")
+        if os.path.exists(bm25_path):
+            os.remove(bm25_path)
+            logger.info("   └─ Deleted: bm25_index.pkl")
+        
+        logger.info("✅ All data cleared successfully")
+        logger.info("═" * 60)
+    
     def _save_all(self):
         """Persist index and data to disk"""
         

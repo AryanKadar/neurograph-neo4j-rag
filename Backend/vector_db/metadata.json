@@ -5,6 +5,66 @@
       "upload_date": "2026-01-01T13:49:08.690988",
       "num_chunks": 48,
       "total_tokens": 12659
+    },
+    "4da71033-b49b-466b-9b88-543702063079": {
+      "filename": "4da71033-b49b-466b-9b88-543702063079.pdf",
+      "upload_date": "2026-01-16T07:04:15.563528",
+      "num_chunks": 16,
+      "total_tokens": 3810
+    },
+    "10fc7cb3-9fe6-4945-ac3f-66853bd71ba9": {
+      "filename": "10fc7cb3-9fe6-4945-ac3f-66853bd71ba9.pdf",
+      "upload_date": "2026-01-16T07:09:55.933265",
+      "num_chunks": 16,
+      "total_tokens": 3810
+    },
+    "aea17ee6-953b-4211-bd3c-5f1712845002": {
+      "filename": "aea17ee6-953b-4211-bd3c-5f1712845002.pdf",
+      "upload_date": "2026-01-16T07:16:45.396285",
+      "num_chunks": 16,
+      "total_tokens": 3810
+    },
+    "b6523af3-8521-4a7a-95e6-a6658bcdb924": {
+      "filename": "b6523af3-8521-4a7a-95e6-a6658bcdb924.pdf",
+      "upload_date": "2026-01-16T07:22:38.362776",
+      "num_chunks": 16,
+      "total_tokens": 3810
+    },
+    "cf6333fe-4ab3-4fbb-8a97-9d0a89c44f9e": {
+      "filename": "cf6333fe-4ab3-4fbb-8a97-9d0a89c44f9e.pdf",
+      "upload_date": "2026-01-16T07:26:08.379745",
+      "num_chunks": 16,
+      "total_tokens": 3810
+    },
+    "42f3c670-63ee-4422-b568-dd60112e45b5": {
+      "filename": "42f3c670-63ee-4422-b568-dd60112e45b5.pdf",
+      "upload_date": "2026-01-16T07:31:50.686640",
+      "num_chunks": 16,
+      "total_tokens": 3810
+    },
+    "f8f81d69-bf59-42c5-abfd-08cdfebbbdc2": {
+      "filename": "f8f81d69-bf59-42c5-abfd-08cdfebbbdc2.pdf",
+      "upload_date": "2026-01-16T07:36:41.981451",
+      "num_chunks": 16,
+      "total_tokens": 3810
+    },
+    "b1fab482-873b-425a-9da8-94a9290f35a9": {
+      "filename": "b1fab482-873b-425a-9da8-94a9290f35a9.pdf",
+      "upload_date": "2026-01-19T05:35:32.644693",
+      "num_chunks": 17,
+      "total_tokens": 4056
+    },
+    "d179098f-d424-4483-afc1-a3bb3fd361ca": {
+      "filename": "d179098f-d424-4483-afc1-a3bb3fd361ca.pdf",
+      "upload_date": "2026-01-19T05:50:28.291021",
+      "num_chunks": 16,
+      "total_tokens": 3810
+    },
+    "32174111-869d-49ea-8db9-d93959c09c4b": {
+      "filename": "32174111-869d-49ea-8db9-d93959c09c4b.pdf",
+      "upload_date": "2026-01-19T06:20:26.662709",
+      "num_chunks": 46,
+      "total_tokens": 12659
     }
   }
 }
