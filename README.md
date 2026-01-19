@@ -179,43 +179,43 @@ npm run dev
 
 ```mermaid
 graph TD
-    User[👤 User] --> Frontend[💻 Frontend (React)]
-    Frontend -->|POST /api/chat/stream| Backend[⚙️ Backend API (FastAPI)]
+    User["👤 User"] --> Frontend["💻 Frontend (React)"]
+    Frontend -->|"POST /api/chat/stream"| Backend["⚙️ Backend API (FastAPI)"]
 
     subgraph "🧠 NeuroGraph-RAG Engine"
-        Backend --> Router{🧭 Smart Query Router}
+        Backend --> Router{"🧭 Smart Query Router"}
 
-        Router -->|Greeting/Chitchat| QuickResp[⚡ Quick Response]
-        Router -->|Simple Query| Retrieval
-        Router -->|Complex/Agentic| QueryTransform[🔄 Query Transformation]
+        Router -->|"Greeting/Chitchat"| QuickResp["⚡ Quick Response"]
+        Router -->|"Simple Query"| Retrieval
+        Router -->|"Complex/Agentic"| QueryTransform["🔄 Query Transformation"]
 
         subgraph "Query Intelligence"
-            QueryTransform -->|Analyze| Weights[⚖️ Weight Optimization]
-            QueryTransform -->|Generate| HyDE[📝 HyDE Document]
-            HyDE -->|Critique| SelfCritique[🕵️ Self-Correction]
-            SelfCritique -->|Refined Query| Retrieval
+            QueryTransform -->|Analyze| Weights["⚖️ Weight Optimization"]
+            QueryTransform -->|Generate| HyDE["📝 HyDE Document"]
+            HyDE -->|Critique| SelfCritique["🕵️ Self-Correction"]
+            SelfCritique -->|"Refined Query"| Retrieval
         end
 
         subgraph "🔍 Triple Search Core"
-            Retrieval --> Vector[📐 Vector Search (FAISS)]
-            Retrieval --> BM25[🔑 Keyword Search (BM25)]
-            Retrieval --> Graph[🕸️ Graph Traversal (BFS)]
+            Retrieval --> Vector["📐 Vector Search (FAISS)"]
+            Retrieval --> BM25["🔑 Keyword Search (BM25)"]
+            Retrieval --> Graph["🕸️ Graph Traversal (BFS)"]
 
-            Vector -->|Top-10| RRF[🔀 RRF Fusion]
-            BM25 -->|Top-10| RRF
-            Graph -->|Top-10| RRF
+            Vector -->|"Top-10"| RRF["🔀 RRF Fusion"]
+            BM25 -->|"Top-10"| RRF
+            Graph -->|"Top-10"| RRF
         end
 
         subgraph "📉 Post-Processing"
-            RRF --> Rerank[⚖️ Cross-Encoder Reranking]
-            Rerank --> Hierarchy[🌳 Parent-Child Expansion]
-            Hierarchy --> Compress[🤏 Context Compression]
-            Compress --> TOON[📋 TOON Formatting]
+            RRF --> Rerank["⚖️ Cross-Encoder Reranking"]
+            Rerank --> Hierarchy["🌳 Parent-Child Expansion"]
+            Hierarchy --> Compress["🤏 Context Compression"]
+            Compress --> TOON["📋 TOON Formatting"]
         end
 
-        TOON --> Generator[🤖 GPT-5 Generation]
+        TOON --> Generator["🤖 GPT-5 Generation"]
         QuickResp --> Frontend
-        Generator -->|SSE Stream| Frontend
+        Generator -->|"SSE Stream"| Frontend
     end
     
     style User fill:#f9f,stroke:#333,stroke-width:2px
