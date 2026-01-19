@@ -179,50 +179,44 @@ npm run dev
 
 ```mermaid
 graph TD
-    User["👤 User"] --> Frontend["💻 Frontend (React)"]
-    Frontend -->|"POST /api/chat/stream"| Backend["⚙️ Backend API (FastAPI)"]
-
-    subgraph "🧠 NeuroGraph-RAG Engine"
-        Backend --> Router{"🧭 Smart Query Router"}
-
-        Router -->|"Greeting/Chitchat"| QuickResp["⚡ Quick Response"]
-        Router -->|"Simple Query"| Retrieval
-        Router -->|"Complex/Agentic"| QueryTransform["🔄 Query Transformation"]
-
-        subgraph "Query Intelligence"
-            QueryTransform -->|Analyze| Weights["⚖️ Weight Optimization"]
-            QueryTransform -->|Generate| HyDE["📝 HyDE Document"]
-            HyDE -->|Critique| SelfCritique["🕵️ Self-Correction"]
-            SelfCritique -->|"Refined Query"| Retrieval
-        end
-
-        subgraph "🔍 Triple Search Core"
-            Retrieval --> Vector["📐 Vector Search (FAISS)"]
-            Retrieval --> BM25["🔑 Keyword Search (BM25)"]
-            Retrieval --> Graph["🕸️ Graph Traversal (BFS)"]
-
-            Vector -->|"Top-10"| RRF["🔀 RRF Fusion"]
-            BM25 -->|"Top-10"| RRF
-            Graph -->|"Top-10"| RRF
-        end
-
-        subgraph "📉 Post-Processing"
-            RRF --> Rerank["⚖️ Cross-Encoder Reranking"]
-            Rerank --> Hierarchy["🌳 Parent-Child Expansion"]
-            Hierarchy --> Compress["🤏 Context Compression"]
-            Compress --> TOON["📋 TOON Formatting"]
-        end
-
-        TOON --> Generator["🤖 GPT-5 Generation"]
-        QuickResp --> Frontend
-        Generator -->|"SSE Stream"| Frontend
-    end
+    %% Nodes
+    User["👤 User"]
+    Frontend["💻 Frontend (React)"]
+    Backend["⚙️ Backend API"]
+    Router{"🧭 Query Router"}
     
-    style User fill:#f9f,stroke:#333,stroke-width:2px
-    style Frontend fill:#bbf,stroke:#333,stroke-width:2px
-    style Backend fill:#bfb,stroke:#333,stroke-width:2px
-    style Router fill:#ff9,stroke:#333,stroke-width:2px
-    style Generator fill:#f96,stroke:#333,stroke-width:2px
+    subgraph "🧠 Intelligence Layer"
+        HyDE["📝 HyDE & Analysis"]
+        Search["🔍 Triple Search (Vector + BM25 + Graph)"]
+        Fusion["� RRF Fusion & Rerank"]
+        Generation["🤖 GPT-5 Answer"]
+    end
+
+    %% Connections
+    User --> Frontend
+    Frontend -->|"Stream Request"| Backend
+    Backend --> Router
+    
+    Router -->|"Simple Query"| Search
+    Router -->|"Complex Query"| HyDE
+    Router -->|"Greeting"| Quick["⚡ Quick Reply"]
+    
+    HyDE --> Search
+    Search --> Fusion
+    Fusion --> Generation
+    
+    Generation -->|"SSE Stream"| Frontend
+    Quick --> Frontend
+
+    %% Styling with High Contrast
+    classDef box fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000000;
+    classDef decision fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,color:#000000;
+    classDef user fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000000;
+    classDef process fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000000;
+
+    class User,Frontend,Backend,Quick user;
+    class Router decision;
+    class HyDE,Search,Fusion,Generation process;
 ```
 
 ### Backend Architecture
