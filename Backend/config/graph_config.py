@@ -5,12 +5,21 @@
 """
 
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Graph Database Paths
 GRAPH_DB_PATH = "./graph_db"
 NODES_FILE = f"{GRAPH_DB_PATH}/nodes.json"
 EDGES_FILE = f"{GRAPH_DB_PATH}/edges.json"
 ENTITY_CHUNKS_FILE = f"{GRAPH_DB_PATH}/entity_chunks.json"
+
+# Neo4j Configuration
+NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+NEO4J_USER = os.getenv("NEO4J_USERNAME", "neo4j")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "password")
+NEO4J_DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
 
 # Entity Extraction Settings
 ENTITY_EXTRACTION_MODEL = "gpt-5-chat"  # Uses your Azure OpenAI

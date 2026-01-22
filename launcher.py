@@ -97,7 +97,11 @@ def main():
                  log("Ollama executable not found in PATH. Skipping local LLM support.", "warn")
 
         # 2. Start Backend
-        log("Starting FastAPI Backend...", "sys")
+        log("Initializing FastAPI Backend...", "sys")
+        print(f"{Fore.CYAN}     ├─ Vector Database: FAISS HNSW{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}     ├─ Knowledge Graph: Neo4j (Graph Database){Style.RESET_ALL}")
+        print(f"{Fore.CYAN}     ├─ Chunking: Agentic Semantic Analysis{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}     └─ LLM: Azure OpenAI (GPT-5){Style.RESET_ALL}")
         
         if not backend_dir.exists():
             log(f"Backend directory not found at: {backend_dir}", "error")
@@ -112,7 +116,9 @@ def main():
             env=os.environ.copy()
         )
         
-        log("Backend started ✓", "info")
+        log("Backend started successfully ✓", "info")
+        log("API Server: http://localhost:8000", "info")
+        log("API Docs: http://localhost:8000/docs", "info")
         log("Press Ctrl+C to stop all services", "sys")
         
         # 3. Monitor Loop

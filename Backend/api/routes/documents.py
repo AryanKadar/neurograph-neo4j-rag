@@ -5,18 +5,22 @@
 """
 
 import os
-from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException
+from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from config.settings import settings
 from utils.file_handler import validate_file, save_upload_file
 from services.document_processor import process_document
 from services.vector_store import get_vector_store
+from services.progress_service import get_progress_tracker
 from utils.logger import setup_logger
 
 logger = setup_logger()
+progress_tracker = get_progress_tracker()
 
 router = APIRouter(prefix="/api", tags=["documents"])
 
+
+from services.graph_service import get_graph_service
 
 @router.post("/upload")
 async def upload_document(
@@ -35,6 +39,18 @@ async def upload_document(
     logger.info(f"   └─ Filename: {file.filename}")
     logger.info(f"   └─ Content-Type: {file.content_type}")
     
+    # ─────────────────────────────────────
+    # Step 0: Clear Previous Data (Fresh Start)
+    # ─────────────────────────────────────
+    logger.info("🧹 Clearing previous data (Clean Slate Mode)...")
+    try:
+        get_graph_service().clear_all()
+        get_vector_store().clear_all()
+        logger.info("✨ Previous data cleared successfully.")
+    except Exception as e:
+        logger.error(f"⚠️ Error clearing previous data: {e}")
+        # We continue anyway, as it might just be empty
+
     # Validate file
     validate_file(file)
     
@@ -63,21 +79,63 @@ async def get_analysis_status(file_id: str):
     """
     ┌─────────────────────────────────────────────┐
     │  📊 Get document analysis status            │
+    │  (Enhanced with real-time progress)         │
     └─────────────────────────────────────────────┘
     """
     
-    logger.info(f"📊 Status check for: {file_id}")
+    # Try to get from progress tracker first (more detailed)
+    progress = progress_tracker.get_progress(file_id)
     
+    if progress:
+        logger.info(f"📊 Status check for: {file_id} - {progress['stage']}")
+        return progress
+    
+    # Fallback to vector store status
     vector_store = get_vector_store()
     status = vector_store.get_document_status(file_id)
     
-    logger.info(f"   └─ Status: {status['status']}")
+    logger.info(f"📊 Status check for: {file_id} - {status.get('status', 'unknown')}")
     
     return {
         "file_id": file_id,
         "status": status.get("status", "processing"),
-        "chunks_count": status.get("chunks_count", 0)
+        "chunks_count": status.get("chunks_count", 0),
+        "stage": status.get("status", "unknown"),
+        "progress": 0
     }
+
+
+@router.websocket("/ws/progress/{file_id}")
+async def websocket_progress(websocket: WebSocket, file_id: str):
+    """
+    ┌─────────────────────────────────────────────┐
+    │  🔌 WebSocket for Real-time Progress        │
+    │  Connect to receive live processing updates │
+    └─────────────────────────────────────────────┘
+    """
+    await websocket.accept()
+    
+    try:
+        # Register this connection for updates
+        await progress_tracker.register_connection(file_id, websocket)
+        
+        # Send current progress immediately
+        current_progress = progress_tracker.get_progress(file_id)
+        if current_progress:
+            await websocket.send_json(current_progress)
+        
+        logger.info(f"🔌 WebSocket connected for file: {file_id}")
+        
+        # Keep connection alive and wait for disconnect
+        while True:
+            # Just receive any messages (ping/pong)
+            await websocket.receive_text()
+            
+    except WebSocketDisconnect:
+        logger.info(f"🔌 WebSocket disconnected for file: {file_id}")
+    finally:
+        # Unregister connection
+        await progress_tracker.unregister_connection(file_id, websocket)
 
 
 @router.get("/documents/{file_id}/view")

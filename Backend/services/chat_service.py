@@ -106,10 +106,17 @@ class ChatService:
             # Generate quick response
             quick_response = router.format_quick_response(route, query)
             if quick_response:
-                # Stream the quick response
-                yield f"data: {json.dumps({'content': quick_response})}\\n\\n"
-                yield f"data: {json.dumps({'done': True})}\\n\\n"
-                logger.info(f"✅ Quick response sent (no RAG needed)")
+                # Simulate streaming for quick response to ensure frontend catches it
+                words = quick_response.split(' ')
+                for i, word in enumerate(words):
+                    # Add space back unless it's the last word
+                    content = word + (" " if i < len(words) - 1 else "")
+                    yield f"data: {json.dumps({'content': content})}\n\n"
+                    # Tiny delay to ensure frontend processes the chunk
+                    time.sleep(0.05)
+                
+                yield f"data: {json.dumps({'done': True})}\n\n"
+                logger.info(f"✅ Quick response streamed successfully")
                 return
         
         # ─────────────────────────────────────

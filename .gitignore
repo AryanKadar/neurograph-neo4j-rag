@@ -116,3 +116,6 @@ Thumbs.db
 *.bin
 *.pt
 *.pth
+
+# Neo4j / Local Graph Data
+Backend/graph_db/*.json

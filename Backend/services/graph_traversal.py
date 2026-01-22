@@ -88,7 +88,7 @@ class GraphTraversal:
         resolved = []
         for ref in entity_refs:
             # Try direct ID lookup
-            if ref in self.graph_service.nodes:
+            if self.graph_service.get_node(ref):
                 resolved.append(ref)
             else:
                 # Try name search

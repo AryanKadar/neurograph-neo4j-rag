@@ -5,6 +5,7 @@
 """
 
 import os
+import asyncio
 import numpy as np
 from typing import List
 from services.document_parser import DocumentParser
@@ -14,9 +15,11 @@ from services.vector_store import get_vector_store
 from services.bm25_service import get_bm25_service
 from services.entity_extractor import get_entity_extractor
 from services.graph_service import get_graph_service
+from services.progress_service import get_progress_tracker, ProcessingStage
 from utils.logger import setup_logger
 
 logger = setup_logger()
+progress_tracker = get_progress_tracker()
 
 
 async def process_document(file_path: str, file_id: str):
@@ -34,14 +37,18 @@ async def process_document(file_path: str, file_id: str):
     try:
         filename = os.path.basename(file_path)
         
-        logger.info("═" * 60)
+        # Initialize progress tracking
+        progress_tracker.start_processing(file_id, filename, total_stages=6)
+        
+        
         logger.info(f"🚀 PROCESSING DOCUMENT: {filename}")
         logger.info("═" * 60)
         
         # ─────────────────────────────────────
         # Step 1: Parse document
         # ─────────────────────────────────────
-        logger.info("\n📋 STEP 1: Parsing Document")
+        progress_tracker.update_stage(file_id, ProcessingStage.PARSING, stage_num=1)
+        logger.info("\n📋 STEP 1/6: Parsing Document")
         logger.info("─" * 40)
         
         parser = DocumentParser()
@@ -56,7 +63,8 @@ async def process_document(file_path: str, file_id: str):
         # ─────────────────────────────────────
         # Step 2: Chunk text
         # ─────────────────────────────────────
-        logger.info("\n✂️ STEP 2: Chunking Text")
+        progress_tracker.update_stage(file_id, ProcessingStage.CHUNKING, stage_num=2)
+        logger.info("\n✂️ STEP 2/6: Chunking Text (Agentic Semantic Analysis)")
         logger.info("─" * 40)
         
         chunker = get_text_chunker()
@@ -71,7 +79,8 @@ async def process_document(file_path: str, file_id: str):
         # ─────────────────────────────────────
         # Step 3: Generate embeddings
         # ─────────────────────────────────────
-        logger.info("\n🧠 STEP 3: Generating Embeddings")
+        progress_tracker.update_stage(file_id, ProcessingStage.EMBEDDING, stage_num=3)
+        logger.info("\n🧠 STEP 3/6: Generating Embeddings")
         logger.info("─" * 40)
         
         embedding_service = get_embedding_service()
@@ -86,6 +95,13 @@ async def process_document(file_path: str, file_id: str):
             batch = chunks[i:i+BATCH_SIZE]
             batch_num = i // BATCH_SIZE + 1
             
+            # Update substage progress
+            progress_tracker.update_substage(
+                file_id, 
+                f"Processing batch {batch_num}/{total_batches}",
+                current=batch_num,
+                total=total_batches
+            )
             logger.info(f"   └─ Batch {batch_num}/{total_batches}: {len(batch)} chunks")
             
             batch_embeddings = embedding_service.embed_texts(batch)
@@ -99,7 +115,8 @@ async def process_document(file_path: str, file_id: str):
         # ─────────────────────────────────────
         # Step 4: Store in vector database
         # ─────────────────────────────────────
-        logger.info("\n💾 STEP 4: Storing in Vector Database")
+        progress_tracker.update_stage(file_id, ProcessingStage.VECTOR_STORING, stage_num=4)
+        logger.info("\n💾 STEP 4/6: Storing in Vector Database")
         logger.info("─" * 40)
         
         vector_store = get_vector_store()
@@ -114,7 +131,8 @@ async def process_document(file_path: str, file_id: str):
         # ─────────────────────────────────────
         # Step 5: Build BM25 Index
         # ─────────────────────────────────────
-        logger.info("\n🔨 STEP 5: Building BM25 Keyword Index")
+        progress_tracker.update_stage(file_id, ProcessingStage.BM25_INDEXING, stage_num=5)
+        logger.info("\n🔨 STEP 5/6: Building BM25 Keyword Index")
         logger.info("─" * 40)
         
         bm25_service = get_bm25_service()
@@ -135,7 +153,8 @@ async def process_document(file_path: str, file_id: str):
         # ─────────────────────────────────────
         # Step 6: Extract Knowledge Graph
         # ─────────────────────────────────────
-        logger.info("\n🕸️  STEP 6: Extracting Knowledge Graph")
+        progress_tracker.update_stage(file_id, ProcessingStage.ENTITY_EXTRACTION, stage_num=6)
+        logger.info("\n🕸️  STEP 6/6: Extracting Knowledge Graph (AI-Powered Analysis)")
         logger.info("─" * 40)
         
         entity_extractor = get_entity_extractor()
@@ -160,11 +179,35 @@ async def process_document(file_path: str, file_id: str):
         total_entities = 0
         total_relationships = 0
         
-        for parent_chunk in parent_chunks:
-            # Extract entities and relationships
-            extraction_result = entity_extractor.extract(
-                text=parent_chunk['text'],
-                chunk_id=parent_chunk['id']
+        # Prepare for parallel execution
+        # Use a semaphore to limit concurrent API calls (Rate Limit Protection)
+        MAX_CONCURRENT_REQUESTS = 5
+        semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
+        
+        async def bounded_extract(chunk_data):
+            async with semaphore:
+                # Update substage happens here differently or we just log completion
+                return await entity_extractor.extract_async(
+                    text=chunk_data['text'],
+                    chunk_id=chunk_data['id']
+                )
+
+        logger.info(f"   └─ launching {len(parent_chunks)} parallel extraction tasks (max {MAX_CONCURRENT_REQUESTS} concurrent)...")
+        
+        # Create tasks
+        tasks = [bounded_extract(chunk) for chunk in parent_chunks]
+        
+        # Run all tasks concurrently
+        results = await asyncio.gather(*tasks)
+        
+        # Process results
+        for idx, extraction_result in enumerate(results, 1):
+            # Update progress (less granular updates in parallel, but good to show we are assembling)
+            progress_tracker.update_substage(
+                file_id,
+                f"Saving graph data {idx}/{len(parent_chunks)}",
+                current=idx,
+                total=len(parent_chunks)
             )
             
             # Add to graph
@@ -182,6 +225,14 @@ async def process_document(file_path: str, file_id: str):
         # ─────────────────────────────────────
         # Complete!
         # ─────────────────────────────────────
+        progress_tracker.mark_completed(file_id, summary={
+            "chunks": len(chunks),
+            "entities": total_entities,
+            "relationships": total_relationships,
+            "graph_nodes": graph_stats['total_nodes'],
+            "graph_edges": graph_stats['total_edges']
+        })
+        
         logger.info("\n" + "═" * 60)
         logger.info(f"🎉 DOCUMENT PROCESSED SUCCESSFULLY!")
         logger.info(f"   └─ File ID: {file_id}")
@@ -194,6 +245,9 @@ async def process_document(file_path: str, file_id: str):
         
     except Exception as e:
         logger.error(f"❌ Error processing document {file_id}: {e}")
+        
+        # Mark as failed in progress tracker
+        progress_tracker.mark_failed(file_id, str(e))
         
         # Mark as failed in vector store
         try:

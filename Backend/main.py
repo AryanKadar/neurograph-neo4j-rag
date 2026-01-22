@@ -59,8 +59,12 @@ async def lifespan(app: FastAPI):
     print_section("SERVER READY")
     print_success("🌟 Cosmic AI Backend is running!")
     print_info(f"📡 API: http://localhost:8000")
-    print_info(f"📚 Docs: http://localhost:8000/docs")
-    print_info(f"🔧 CORS: {settings.CORS_ORIGINS}")
+    print_info(f"📚 API Documentation: http://localhost:8000/docs")
+    print_info(f"🔌 WebSocket Progress: ws://localhost:8000/api/ws/progress/{{file_id}}")
+    print_info(f"🔧 CORS Origins: {settings.CORS_ORIGINS}")
+    print("")
+    print_success("✅ All systems operational - Ready to process documents!")
+    print
     
     yield
     

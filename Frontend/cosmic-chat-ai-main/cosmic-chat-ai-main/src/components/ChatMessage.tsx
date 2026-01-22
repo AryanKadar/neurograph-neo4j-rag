@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -25,8 +25,34 @@ interface ChatMessageProps {
   isLatest?: boolean;
 }
 
+const LOADING_MESSAGES = [
+  "Consulting the star charts... 🌟",
+  "Asking a black hole for directions... ⚫",
+  "Decoding nebula signals... 📡",
+  "Traversing the event horizon... 🚀",
+  "Aligning the cosmic crystals... 💎",
+  "Downloading knowledge from the void... 🌌",
+  "Warping through spacetime... ⏳",
+  "Polishing the telescope lenses... 🔭"
+];
+
 const ChatMessage = memo(({ message, isLatest }: ChatMessageProps) => {
   const isUser = message.role === 'user';
+  const [loadingMessage, setLoadingMessage] = useState(LOADING_MESSAGES[0]);
+
+  useEffect(() => {
+    if (!message.isStreaming || message.content) return;
+
+    // Rotate messages
+    const interval = setInterval(() => {
+      setLoadingMessage(prev => {
+        const nextIdx = (LOADING_MESSAGES.indexOf(prev) + 1) % LOADING_MESSAGES.length;
+        return LOADING_MESSAGES[nextIdx];
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [message.isStreaming, message.content]);
 
   return (
     <motion.div
@@ -41,8 +67,8 @@ const ChatMessage = memo(({ message, isLatest }: ChatMessageProps) => {
         animate={{ scale: 1 }}
         transition={{ duration: 0.3, delay: 0.1 }}
         className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${isUser
-            ? 'bg-gradient-to-br from-cosmic-cyan to-cosmic-purple glow-cyan'
-            : 'bg-gradient-to-br from-cosmic-purple to-cosmic-pink glow-purple'
+          ? 'bg-gradient-to-br from-cosmic-cyan to-cosmic-purple glow-cyan'
+          : 'bg-gradient-to-br from-cosmic-purple to-cosmic-pink glow-purple'
           }`}
       >
         {isUser ? (
@@ -65,7 +91,7 @@ const ChatMessage = memo(({ message, isLatest }: ChatMessageProps) => {
           <div className="flex items-center gap-3 py-2">
             <CosmicLoader size="sm" />
             <span className="text-muted-foreground text-sm animate-pulse">
-              Exploring the cosmic knowledge...
+              {loadingMessage}
             </span>
           </div>
         ) : (
