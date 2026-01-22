@@ -36,11 +36,11 @@ graph TD
     %% Styling
     classDef user fill:#1a1b26,stroke:#7aa2f7,stroke-width:2px,color:#fff;
     classDef frontend fill:#24283b,stroke:#bb9af7,stroke-width:2px,color:#fff;
-    classDef gateway fill:#414868,stroke:#7dcfff,stroke-width:2px,color:#fff;
+    classDef gateway fill:#414864,stroke:#7dcfff,stroke-width:2px,color:#fff;
     classDef ai fill:#24283b,stroke:#f7768e,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
     classDef core fill:#16161e,stroke:#9ece6a,stroke-width:2px,color:#fff;
     classDef storage fill:#1f2335,stroke:#e0af68,stroke-width:2px,color:#fff;
-    classDef graph fill:#1f2335,stroke:#018bff,stroke-width:3px,color:#fff;
+    classDef graphNode fill:#1f2335,stroke:#018bff,stroke-width:3px,color:#fff;
     
     User(👤 User) -->|Query| UI(💻 Cosmic UI)
     class User user
@@ -69,7 +69,7 @@ graph TD
             Triple -->|Relational| GraphDB[(🕸️ Neo4j Knowledge Graph)]
             
             class Vector,BM25 storage
-            class GraphDB graph
+            class GraphDB graphNode
         end
         
         subgraph "⚙️ Synthesis Layer"
